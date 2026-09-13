@@ -27,6 +27,7 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 *.env
+!.env.example
 
 # Operating System Files
 .DS_Store
