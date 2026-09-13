@@ -1,0 +1,14 @@
+{
+  "name": "ai-detection-dashboard-workspace",
+  "version": "1.0.0",
+  "description": "Celebrity & Machine Diagnostic Dashboard with Node.js backend and React Vite frontend",
+  "scripts": {
+    "server": "cd server && npm start",
+    "server:dev": "cd server && npm run dev",
+    "client": "cd my-project && npm run dev",
+    "build:client": "cd my-project && npm run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
