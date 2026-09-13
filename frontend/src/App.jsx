@@ -55,6 +55,8 @@ export default function App() {
     }
   }, []);
 
+  const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+
   const fetchData = async () => {
     const startTime = performance.now();
     try {
@@ -63,8 +65,8 @@ export default function App() {
 
       // Fetch in parallel
       const [celebRes, infoRes] = await Promise.all([
-        fetch('/api/celebs'),
-        fetch('/api/client-info')
+        fetch(`${API_BASE}/api/celebs`),
+        fetch(`${API_BASE}/api/client-info`)
       ]);
 
       if (!celebRes.ok || !infoRes.ok) {
@@ -187,8 +189,8 @@ export default function App() {
             <div className="text-sm">
               <p className="font-semibold text-red-200">Unable to reach Node.js backend</p>
               <p className="mt-0.5 text-red-300/80">
-                Please make sure the backend server is running on <code className="bg-red-950/60 px-1.5 py-0.5 rounded text-red-200">http://localhost:5000</code>.
-                You can run <code className="bg-red-950/60 px-1.5 py-0.5 rounded text-red-200">npm start</code> inside the <code className="bg-red-950/60 px-1.5 py-0.5 rounded text-red-200">server</code> directory.
+                Attempted to fetch from <code className="bg-red-950/60 px-1.5 py-0.5 rounded text-red-200">{API_BASE || 'http://localhost:5000'}</code>.
+                Ensure your backend is running and that <code className="bg-red-950/60 px-1.5 py-0.5 rounded text-red-200">VITE_API_BASE_URL</code> is set in Vercel environment variables.
               </p>
             </div>
           </div>
