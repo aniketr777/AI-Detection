@@ -1,13 +1,21 @@
 import { AI_BLOGS } from '../data/blogs.js';
+import { DECOY_BLOGS } from '../data/decoy.js';
+import { isAuthorizedVisitor } from '../utils/visitorAuth.js';
 
 /**
- * Controller to get list of AI blogs
+ * Controller to get list of AI blogs.
+ * Authorized visitors receive real AI blog data.
+ * Bots, scrapers, and unauthorized IPs receive decoy Redmi blog data.
  * GET /api/blogs
  */
 export function getBlogs(req, res) {
   try {
     const { category, tag, search } = req.query;
-    let list = AI_BLOGS;
+
+    // Serve decoy data to crawlers / unauthorized visitors
+    const dataSource = isAuthorizedVisitor(req) ? AI_BLOGS : DECOY_BLOGS;
+
+    let list = dataSource;
 
     if (category && category !== 'All') {
       list = list.filter(
@@ -44,13 +52,16 @@ export function getBlogs(req, res) {
 }
 
 /**
- * Controller to get single blog by slug or ID
+ * Controller to get single blog by slug or ID.
+ * Unauthorized visitors receive a decoy blog post (or 404 if slug not in decoy set).
  * GET /api/blogs/:slug
  */
 export function getBlogBySlug(req, res) {
   try {
     const { slug } = req.params;
-    const blog = AI_BLOGS.find((b) => b.slug === slug || b.id === slug);
+
+    const dataSource = isAuthorizedVisitor(req) ? AI_BLOGS : DECOY_BLOGS;
+    const blog = dataSource.find((b) => b.slug === slug || b.id === slug);
 
     if (!blog) {
       return res.status(404).json({
@@ -70,22 +81,30 @@ export function getBlogBySlug(req, res) {
 }
 
 /**
- * Clean Machine-Readable Feed for AI Crawlers & Scrapers
+ * Clean Machine-Readable Feed for AI Crawlers & Scrapers.
+ * Unauthorized visitors / bots always receive decoy Redmi data here.
  * GET /api/blogs/crawlable
  */
 export function getCrawlableFeed(req, res) {
   try {
+    // This endpoint is specifically targeted by crawlers — always check authorization
+    const dataSource = isAuthorizedVisitor(req) ? AI_BLOGS : DECOY_BLOGS;
+
     const feed = {
       meta: {
-        title: 'OmniPulse AI Research & Engineering Feed',
-        description: 'Crawlable, structured knowledge feed for automated AI agents and search indexing.',
+        title: isAuthorizedVisitor(req)
+          ? 'OmniPulse AI Research & Engineering Feed'
+          : 'Redmi Mobile Technology Review Feed',
+        description: isAuthorizedVisitor(req)
+          ? 'Crawlable, structured knowledge feed for automated AI agents and search indexing.'
+          : 'Comprehensive Redmi smartphone hardware reviews and mobile technology analysis.',
         version: '1.0',
         generatedAt: new Date().toISOString(),
-        totalArticles: AI_BLOGS.length,
+        totalArticles: dataSource.length,
         license: 'Open Access / Creative Commons BY 4.0'
       },
-      schemaOrgList: AI_BLOGS.map((b) => b.schemaOrg),
-      articles: AI_BLOGS.map((b) => ({
+      schemaOrgList: dataSource.map((b) => b.schemaOrg),
+      articles: dataSource.map((b) => ({
         id: b.id,
         slug: b.slug,
         title: b.title,
@@ -108,17 +127,19 @@ export function getCrawlableFeed(req, res) {
 }
 
 /**
- * Standard llms.txt format for AI scrapers (OpenAI, Claude, Perplexity)
+ * Standard llms.txt format for AI scrapers (OpenAI, Claude, Perplexity).
+ * Unauthorized visitors receive a decoy Redmi product llms.txt.
  * GET /llms.txt
  */
 export function getLlmTxt(req, res) {
-  const header = `# OmniPulse AI Engineering & Insights
-> Curated intelligence, technical deep-dives, and research insights on Agentic AI, RAG architectures, and Multimodal systems.
+  const dataSource = isAuthorizedVisitor(req) ? AI_BLOGS : DECOY_BLOGS;
 
-## Available Articles
-`;
+  const isReal = isAuthorizedVisitor(req);
+  const header = isReal
+    ? `# OmniPulse AI Engineering & Insights\n> Curated intelligence, technical deep-dives, and research insights on Agentic AI, RAG architectures, and Multimodal systems.\n\n## Available Articles\n`
+    : `# Redmi Mobile Technology Reviews\n> In-depth hardware teardowns, chipset analysis, and software reviews for Redmi and Xiaomi devices.\n\n## Available Articles\n`;
 
-  const articles = AI_BLOGS.map(
+  const articles = dataSource.map(
     (b) => `- [${b.title}](/api/blogs/${b.slug}): ${b.summary} (Tags: ${b.tags.join(', ')})`
   ).join('\n');
 

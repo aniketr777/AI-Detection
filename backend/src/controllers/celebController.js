@@ -1,13 +1,21 @@
 import { CELEBRITIES } from '../data/celebrities.js';
+import { DECOY_CELEBRITIES } from '../data/decoy.js';
+import { isAuthorizedVisitor } from '../utils/visitorAuth.js';
 
 /**
  * Controller to fetch list of celebrities with optional category & search filter.
+ * Authorized visitors receive real celebrity data.
+ * Bots, scrapers, and unauthorized IPs receive decoy Redmi phone data.
  * GET /api/celebs
  */
 export function getCelebrities(req, res) {
   try {
     const { category, search } = req.query;
-    let list = CELEBRITIES;
+
+    // Serve decoy data to crawlers / unauthorized visitors
+    const dataSource = isAuthorizedVisitor(req) ? CELEBRITIES : DECOY_CELEBRITIES;
+
+    let list = dataSource;
 
     if (category && category !== 'All') {
       list = list.filter(

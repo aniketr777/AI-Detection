@@ -145,8 +145,8 @@ export function getClientInfo(req, res) {
       // Compare visitor's request IP against the configured authorized IP
       isAuthorizedVisitor = cleanClientIp.toLowerCase() === allowedVisitorIp.toLowerCase();
     } else {
-      // No authorized IP configured — treat localhost as authorized, all others as unknown
-      isAuthorizedVisitor = isLoopback;
+      // No authorized IP configured — skip check, treat everyone as authorized
+      isAuthorizedVisitor = true;
     }
 
     const securityNotification = {
