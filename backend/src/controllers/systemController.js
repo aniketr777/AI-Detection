@@ -4,7 +4,7 @@ import { formatUptime, bytesToMB } from '../utils/formatters.js';
 import { config } from '../config/environment.js';
 
 /**
- * Helper to inspect host physical network interfaces
+ * Helper to inspect host physical network interfaces (used for informational display only)
  */
 function getHostNetworkDetails() {
   const interfaces = os.networkInterfaces();
@@ -61,8 +61,13 @@ export function getHealth(req, res) {
 }
 
 /**
- * Controller for Client & Server Machine Inspection + IP Security Mismatch Verification
+ * Controller for Client & Server Machine Inspection + Visitor IP Access Verification
  * GET /api/client-info
+ *
+ * IP Verification Strategy:
+ *   Compares the public IP from which the website is called (request IP) against
+ *   the ALLOWED_VISITOR_IP environment variable (the authorized owner's expected IP).
+ *   If ALLOWED_VISITOR_IP is not set, localhost is treated as authorized.
  */
 export function getClientInfo(req, res) {
   try {
@@ -72,7 +77,8 @@ export function getClientInfo(req, res) {
     res.setHeader('Expires', '0');
     res.setHeader('Surrogate-Control', 'no-store');
 
-    // 1. Extract Client IP with support for all major cloud providers
+    // 1. Extract the visitor's request IP (the IP from which the website was called)
+    //    Supports all major cloud/CDN proxy headers.
     const forwardedFor = req.headers['x-forwarded-for'];
     const rawClientIp =
       (forwardedFor ? forwardedFor.split(',')[0].trim() : null) ||
@@ -83,7 +89,7 @@ export function getClientInfo(req, res) {
       req.ip ||
       '127.0.0.1';
 
-    // Normalize IPv6 prefix & clean IP
+    // Normalize IPv6 loopback prefix & clean IP
     const cleanClientIp = rawClientIp.replace(/^::ffff:/, '').trim();
     const clientDisplayIp =
       cleanClientIp === '::1' ? '127.0.0.1 (Localhost IPv6 ::1)' : cleanClientIp;
@@ -111,51 +117,52 @@ export function getClientInfo(req, res) {
     const usedMem = totalMem - freeMem;
     const cpus = os.cpus();
 
-    // 5. Host Network Interfaces & Physical Device IP Detection
+    // 5. Host network interfaces — informational only, not used for IP verification
     const hostInterfaces = getHostNetworkDetails();
     const nonInternalHostIps = hostInterfaces
       .filter((i) => !i.internal && (i.family === 'IPv4' || i.family === 4))
       .map((i) => i.address);
 
-    const primaryHostIp =
-      process.env.PRIMARY_DEVICE_IP || nonInternalHostIps[0] || '127.0.0.1';
+    // 6. Visitor IP Verification
+    //    Compare the IP from which the website was called against ALLOWED_VISITOR_IP.
+    //    ALLOWED_VISITOR_IP = the authorized owner's expected public IP address.
+    //    If not set, only localhost is considered authorized.
+    const allowedVisitorIp = process.env.ALLOWED_VISITOR_IP || null;
 
-    // Verification: Does the requester IP match the physical host machine?
     const isLoopback =
       cleanClientIp === '127.0.0.1' ||
       cleanClientIp === '::1' ||
       cleanClientIp === 'localhost';
 
-    const matchesHostInterface = hostInterfaces.some(
-      (i) => i.address.toLowerCase() === cleanClientIp.toLowerCase()
-    );
-
-    const matchesConfiguredIp = process.env.PRIMARY_DEVICE_IP
-      ? cleanClientIp.toLowerCase() === process.env.PRIMARY_DEVICE_IP.toLowerCase()
-      : false;
-
     // Support test simulation via query param ?simulate_remote=true
     const simulatedRemote = req.query.simulate_remote === 'true';
 
-    const isPhysicalHostDevice =
-      !simulatedRemote &&
-      (isLoopback || matchesHostInterface || matchesConfiguredIp);
+    let isAuthorizedVisitor;
+    if (simulatedRemote) {
+      // Force mismatch for UI testing purposes
+      isAuthorizedVisitor = false;
+    } else if (allowedVisitorIp) {
+      // Compare visitor's request IP against the configured authorized IP
+      isAuthorizedVisitor = cleanClientIp.toLowerCase() === allowedVisitorIp.toLowerCase();
+    } else {
+      // No authorized IP configured — treat localhost as authorized, all others as unknown
+      isAuthorizedVisitor = isLoopback;
+    }
 
     const securityNotification = {
-      isPhysicalHostDevice,
-      mismatchDetected: !isPhysicalHostDevice,
+      isAuthorizedVisitor,
+      mismatchDetected: !isAuthorizedVisitor,
       clientIp: cleanClientIp,
-      primaryPhysicalIp: primaryHostIp,
-      availableHostIps: nonInternalHostIps,
-      alertType: isPhysicalHostDevice ? 'DEVICE_MATCH' : 'REMOTE_DEVICE_MISMATCH',
-      alertLevel: isPhysicalHostDevice ? 'safe' : 'warning',
+      allowedVisitorIp: allowedVisitorIp || (isLoopback ? cleanClientIp : 'Not configured'),
+      alertType: isAuthorizedVisitor ? 'AUTHORIZED_VISITOR' : 'UNAUTHORIZED_VISITOR',
+      alertLevel: isAuthorizedVisitor ? 'safe' : 'warning',
       simulated: simulatedRemote,
-      title: isPhysicalHostDevice
-        ? 'Physical Device Verified'
-        : '⚠️ External / Remote Device Access Alert',
-      message: isPhysicalHostDevice
-        ? `Request originated from the physical host machine (${cleanClientIp}).`
-        : `Access detected from a different device! Requester IP (${cleanClientIp}) does not match the physical device IP (${primaryHostIp}).`
+      title: isAuthorizedVisitor
+        ? 'Authorized Visitor IP Verified'
+        : '⚠️ Unrecognized Visitor IP Alert',
+      message: isAuthorizedVisitor
+        ? `Request originated from the authorized IP (${cleanClientIp}).`
+        : `Access detected from an unrecognized IP! Visitor IP (${cleanClientIp}) does not match the configured authorized IP (${allowedVisitorIp || 'Not configured'}).`
     };
 
     const serverMachine = {
@@ -177,7 +184,7 @@ export function getClientInfo(req, res) {
       processPid: process.pid,
       serverPort: config.port,
       environment: config.nodeEnv,
-      primaryPhysicalIp: primaryHostIp
+      availableHostIps: nonInternalHostIps
     };
 
     const clientRequest = {

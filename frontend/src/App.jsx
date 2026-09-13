@@ -306,12 +306,12 @@ export default function App() {
                 {clientInfo.security.mismatchDetected ? (
                   <>
                     <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Remote Access ({clientInfo.security.clientIp})</span>
+                    <span>Unrecognized IP ({clientInfo.security.clientIp})</span>
                   </>
                 ) : (
                   <>
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Physical Device Verified</span>
+                    <span>Authorized Visitor IP</span>
                   </>
                 )}
               </div>
@@ -418,7 +418,7 @@ export default function App() {
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-bold text-amber-300">
-                      Security Alert: Remote / External Device Access Detected
+                      Security Alert: Unrecognized Visitor IP Detected
                     </span>
                     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 uppercase tracking-wider">
                       IP Mismatch
@@ -430,12 +430,12 @@ export default function App() {
                     )}
                   </div>
                   <p className="text-xs text-slate-200 leading-relaxed">
-                    This website was accessed from a device with IP address{' '}
+                    This website was accessed from IP address{' '}
                     <strong className="font-mono text-amber-300 bg-amber-950/90 px-1.5 py-0.5 rounded border border-amber-500/30">
                       {clientInfo.security.clientIp}
                     </strong>
-                    , which <strong>does not match</strong> the designated physical device IP (
-                    <span className="font-mono text-slate-300">{clientInfo.security.primaryPhysicalIp}</span>).
+                    , which <strong>does not match</strong> the configured authorized visitor IP (
+                    <span className="font-mono text-slate-300">{clientInfo.security.allowedVisitorIp}</span>).
                   </p>
                   <div className="pt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-slate-300">
                     <span className="bg-slate-950/70 px-2.5 py-1 rounded-lg border border-slate-800">
@@ -793,7 +793,7 @@ export default function App() {
                       ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 shadow-lg shadow-amber-500/20'
                       : 'bg-slate-900/90 border-slate-800 text-slate-400 hover:text-slate-200'
                   }`}
-                  title="Test how the dashboard alerts when accessed from a different mobile/laptop IP"
+                  title="Test how the dashboard alerts when accessed from an unrecognized/unauthorized visitor IP"
                 >
                   <AlertTriangle className={`w-3.5 h-3.5 ${simulateRemote ? 'text-amber-400' : 'text-slate-500'}`} />
                   <span>{simulateRemote ? 'Test Mismatch (Active)' : 'Test Mismatch Alert'}</span>
@@ -853,12 +853,12 @@ export default function App() {
                         )}
                         <span>
                           {clientInfo?.security?.mismatchDetected
-                            ? 'Remote Device IP (Mismatch)'
-                            : 'Physical Device IP (Verified Match)'}
+                            ? 'Unrecognized Visitor IP (Mismatch)'
+                            : 'Authorized Visitor IP (Verified)'}
                         </span>
                       </div>
                       <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-black/40 border border-slate-700">
-                        {clientInfo?.security?.mismatchDetected ? 'Remote' : 'Physical'}
+                        {clientInfo?.security?.mismatchDetected ? 'Unknown' : 'Authorized'}
                       </span>
                     </div>
 
