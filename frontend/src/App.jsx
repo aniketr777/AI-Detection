@@ -44,6 +44,11 @@ export default function App() {
   const [dismissedAlert, setDismissedAlert] = useState(false);
   const [simulateRemote, setSimulateRemote] = useState(false);
 
+  // Live Continuous IP Tracking state
+  const [autoRefreshIp, setAutoRefreshIp] = useState(true);
+  const [lastPolledAt, setLastPolledAt] = useState(null);
+  const [ipChangeAlert, setIpChangeAlert] = useState(null);
+
   // Active section tab
   const [activeTab, setActiveTab] = useState('all');
 
@@ -82,6 +87,33 @@ export default function App() {
 
   const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
 
+  // Dedicated lightweight IP & Telemetry Poller
+  const pollClientInfo = async (silent = true) => {
+    try {
+      const startTime = performance.now();
+      const simQuery = simulateRemote ? '?simulate_remote=true' : '';
+      const cacheBust = simQuery ? `&_t=${Date.now()}` : `?_t=${Date.now()}`;
+      const res = await fetch(`${API_BASE}/api/client-info${simQuery}${cacheBust}`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      setClientInfo((prev) => {
+        if (prev?.client?.cleanIp && data?.client?.cleanIp && prev.client.cleanIp !== data.client.cleanIp) {
+          setIpChangeAlert(`Network Change Detected: Client IP updated to ${data.client.cleanIp}`);
+          setTimeout(() => setIpChangeAlert(null), 6000);
+        }
+        return data;
+      });
+
+      const nowStr = new Date().toLocaleTimeString();
+      setLastPolledAt(nowStr);
+      setLastRefreshed(nowStr);
+      setLatencyMs(Math.round(performance.now() - startTime));
+    } catch (err) {
+      if (!silent) console.error('Error polling client IP info:', err);
+    }
+  };
+
   const fetchData = async (overrideSimulate = simulateRemote) => {
     const startTime = performance.now();
     try {
@@ -89,10 +121,12 @@ export default function App() {
       setError(null);
 
       const simQuery = overrideSimulate ? '?simulate_remote=true' : '';
+      const cacheBust = simQuery ? `&_t=${Date.now()}` : `?_t=${Date.now()}`;
+
       // Fetch celebrities, blogs, and client info in parallel
       const [celebRes, infoRes, blogRes] = await Promise.all([
         fetch(`${API_BASE}/api/celebs`),
-        fetch(`${API_BASE}/api/client-info${simQuery}`),
+        fetch(`${API_BASE}/api/client-info${simQuery}${cacheBust}`),
         fetch(`${API_BASE}/api/blogs`)
       ]);
 
@@ -107,7 +141,9 @@ export default function App() {
       setCelebrities(celebData.celebrities || []);
       setClientInfo(infoData);
       setBlogs(blogData.blogs || []);
-      setLastRefreshed(new Date().toLocaleTimeString());
+      const nowStr = new Date().toLocaleTimeString();
+      setLastPolledAt(nowStr);
+      setLastRefreshed(nowStr);
       setLatencyMs(Math.round(performance.now() - startTime));
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -125,9 +161,37 @@ export default function App() {
     fetchData(nextState);
   };
 
+  // Initial load
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Continuous background IP telemetry polling (Every 5 seconds)
+  useEffect(() => {
+    if (!autoRefreshIp) return;
+    const interval = setInterval(() => {
+      pollClientInfo(true);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [autoRefreshIp, simulateRemote]);
+
+  // Window visibility, focus, and online reconnection events to keep IP always fresh
+  useEffect(() => {
+    const handleRecheck = () => pollClientInfo(false);
+    window.addEventListener('focus', handleRecheck);
+    window.addEventListener('online', handleRecheck);
+    const handleVis = () => {
+      if (document.visibilityState === 'visible') handleRecheck();
+    };
+    document.addEventListener('visibilitychange', handleVis);
+
+    return () => {
+      window.removeEventListener('focus', handleRecheck);
+      window.removeEventListener('online', handleRecheck);
+      document.removeEventListener('visibilitychange', handleVis);
+    };
+  }, [simulateRemote]);
 
   // Filtered Celebrities
   const filteredCelebrities = useMemo(() => {
@@ -289,6 +353,25 @@ export default function App() {
               </button>
             </div>
 
+            {/* Live Continuous IP Tracking Toggle */}
+            <button
+              onClick={() => setAutoRefreshIp(!autoRefreshIp)}
+              title={autoRefreshIp ? 'Live IP detection is active (polling every 5s). Click to pause.' : 'Live IP detection paused. Click to activate.'}
+              className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
+                autoRefreshIp
+                  ? 'bg-cyan-950/60 border-cyan-500/40 text-cyan-300'
+                  : 'bg-slate-900 border-slate-800 text-slate-500'
+              }`}
+            >
+              <span className="relative flex h-2 w-2">
+                {autoRefreshIp && (
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                )}
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${autoRefreshIp ? 'bg-cyan-400' : 'bg-slate-600'}`}></span>
+              </span>
+              <span>{autoRefreshIp ? 'Live Sync (5s)' : 'Sync Paused'}</span>
+            </button>
+
             {/* Refresh button */}
             <button
               onClick={() => fetchData()}
@@ -304,6 +387,26 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 py-8 w-full flex-1 flex flex-col gap-12">
+        {/* Dynamic Network / IP Change Live Alert */}
+        {ipChangeAlert && (
+          <div className="relative rounded-2xl bg-cyan-950/90 border border-cyan-500/50 p-4 shadow-xl shadow-cyan-500/10 flex items-center justify-between gap-4 animate-in slide-in-from-top duration-300">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center shrink-0">
+                <Zap className="w-4 h-4 text-cyan-400 animate-bounce" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-cyan-300">Live Network Update</p>
+                <p className="text-xs text-slate-200 mt-0.5">{ipChangeAlert}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIpChangeAlert(null)}
+              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
         {/* Security Notification: Non-Physical Device Access Detected */}
         {clientInfo?.security?.mismatchDetected && !dismissedAlert && (
           <div className="relative rounded-2xl bg-gradient-to-r from-amber-950/90 via-red-950/80 to-slate-900 border border-amber-500/50 p-4 sm:p-5 shadow-2xl shadow-amber-500/10 animate-in slide-in-from-top duration-300">
@@ -696,12 +799,22 @@ export default function App() {
                   <span>{simulateRemote ? 'Test Mismatch (Active)' : 'Test Mismatch Alert'}</span>
                 </button>
 
-                {lastRefreshed && (
-                  <div className="text-xs text-slate-500 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span>Last updated at {lastRefreshed}</span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-900/90 px-3 py-1.5 rounded-lg border border-slate-800">
+                  <span className="relative flex h-2 w-2">
+                    {autoRefreshIp && (
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                    )}
+                    <span className={`relative inline-flex rounded-full h-2 w-2 ${autoRefreshIp ? 'bg-cyan-400' : 'bg-slate-600'}`}></span>
+                  </span>
+                  <span className="text-slate-300 font-medium">
+                    {autoRefreshIp ? 'Live IP Auto-Sync (5s)' : 'Auto-Sync Paused'}
+                  </span>
+                  {lastPolledAt && (
+                    <span className="text-slate-500 border-l border-slate-700 pl-2">
+                      Last: {lastPolledAt}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -66,11 +66,22 @@ export function getHealth(req, res) {
  */
 export function getClientInfo(req, res) {
   try {
-    // 1. Extract Client IP
+    // Ensure responses are never cached by browsers or proxy CDNs
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+
+    // 1. Extract Client IP with support for all major cloud providers
     const forwardedFor = req.headers['x-forwarded-for'];
-    const rawClientIp = forwardedFor
-      ? forwardedFor.split(',')[0].trim()
-      : req.socket.remoteAddress || req.ip || '127.0.0.1';
+    const rawClientIp =
+      (forwardedFor ? forwardedFor.split(',')[0].trim() : null) ||
+      req.headers['x-real-ip'] ||
+      req.headers['cf-connecting-ip'] ||
+      req.headers['true-client-ip'] ||
+      req.socket?.remoteAddress ||
+      req.ip ||
+      '127.0.0.1';
 
     // Normalize IPv6 prefix & clean IP
     const cleanClientIp = rawClientIp.replace(/^::ffff:/, '').trim();

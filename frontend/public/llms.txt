@@ -1,0 +1,32 @@
+# OmniPulse AI Research & Engineering Feed
+> Curated technical deep-dives on Agentic AI, Production RAG Grounding, Multimodal Reasoning, and Edge Models.
+
+## Available AI Research Articles
+
+### 1. The Rise of Agentic AI: How Autonomous Systems Reshape Software Development
+- **Category**: Agentic AI
+- **Author**: Dr. Sophia Vance (Principal AI Systems Architect)
+- **Summary**: An in-depth analysis of multi-agent architectures, reactive tool loops, and how modern agentic workflows move past simple chatbots into self-correcting autonomous software builders.
+- **Keywords**: Agentic AI, MCP, Tool Use, Autonomous Systems, Software Engineering
+- **Core Insights**: The shift from prompt-response to autonomous tool execution, deterministic JSON/MCP tool dispatch, execution sandboxes, and self-correcting test loops.
+
+### 2. Mitigating LLM Hallucinations: Advanced Production RAG and Grounding
+- **Category**: LLM Reliability
+- **Author**: Marcus Chen (Staff ML Infrastructure Engineer)
+- **Summary**: Why foundation models hallucinate facts, and how hybrid dense-sparse retrieval, reranking, and citation-backed verification ensure 99.8% output factual accuracy.
+- **Keywords**: RAG, Hallucinations, Vector DB, Information Retrieval, AI Safety
+- **Core Insights**: Probabilistic token generation limits, hybrid dense-sparse (BM25 + vector) retrieval, cross-encoder reranking, and cryptographic citation grounding.
+
+### 3. Beyond Text: The Frontiers of Native Multimodal Reasoning
+- **Category**: Multimodal AI
+- **Author**: Amina Al-Mansoor (Lead Cognitive AI Researcher)
+- **Summary**: Exploring how natively multimodal architectures process visual spatial hierarchies, temporal video frames, and high-fidelity audio tokens simultaneously without conversion bottlenecks.
+- **Keywords**: Multimodal, Computer Vision, Audio AI, Robotics, Transformers
+- **Core Insights**: Limitations of stitched cross-attention projectors, native visual spatial tokens, continuous audio wave tokens, and dynamic video frame attention.
+
+### 4. Small Language Models (SLMs): Enterprise Intelligence at the Edge
+- **Category**: Edge Computing
+- **Author**: Liam O'Connor (Edge AI Systems Engineer)
+- **Summary**: How 1B to 7B parameter models distilled with high-quality synthetic data achieve high domain performance directly on smartphones, laptops, and IoT hardware.
+- **Keywords**: SLM, Edge AI, Quantization, Local LLMs, Privacy
+- **Core Insights**: Overcoming parameter bloat, sub-10ms latency on Apple Silicon & Snapdragon NPUs, absolute zero cloud data egress for HIPAA/GDPR privacy.
