@@ -4,6 +4,7 @@ import { getLlmTxt } from '../controllers/blogController.js';
 import celebRoutes from './celebRoutes.js';
 import systemRoutes from './systemRoutes.js';
 import blogRoutes from './blogRoutes.js';
+import contentRoutes from './contentRoutes.js';
 
 const router = Router();
 
@@ -19,10 +20,10 @@ router.get('/robots.txt', (req, res) => {
 Allow: /
 
 User-agent: GPTBot
-Allow: /
+Disallow: /
 
 User-agent: ClaudeBot
-Allow: /
+Disallow: /
 
 User-agent: PerplexityBot
 Allow: /
@@ -41,5 +42,6 @@ Sitemap: /api/blogs/crawlable
 router.use('/api', celebRoutes);
 router.use('/api', systemRoutes);
 router.use('/api', blogRoutes);
+router.use('/api', contentRoutes);
 
 export default router;

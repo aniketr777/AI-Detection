@@ -31,6 +31,7 @@ import {
   Share2,
   Code
 } from 'lucide-react';
+import GatedContent from './components/GatedContent';
 
 export default function App() {
   const [celebrities, setCelebrities] = useState([]);
@@ -476,6 +477,40 @@ export default function App() {
               </p>
             </div>
           </div>
+        )}
+
+        {/* ------------------------------------------------------------- */}
+        {/* SECTION 0: GATED CONTENT DEMO (AI CRAWLER DEFENSE)            */}
+        {/* ------------------------------------------------------------- */}
+        {(activeTab === 'all') && (
+          <section className="space-y-6 mb-8 p-6 rounded-2xl bg-slate-900/50 border border-indigo-500/30">
+            <div>
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-indigo-400" />
+                Anti-Bot Gated Content Demo
+              </h2>
+              <p className="text-sm text-slate-400 mt-1">
+                This content block requires client-side JavaScript execution. AI crawlers (like GPTBot) will only see the placeholder. Real users will see the actual fetched content.
+              </p>
+            </div>
+            
+            <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 relative min-h-[100px]">
+              <GatedContent 
+                id="hero-section" 
+                placeholder={
+                  '<div class="text-slate-500 italic p-4 text-center">Loading premium content... (Crawlers see this)</div>'
+                } 
+              />
+            </div>
+            <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 relative min-h-[100px]">
+              <GatedContent 
+                id="premium-article" 
+                placeholder={
+                  '<div class="text-slate-500 italic p-4 text-center">Please enable JavaScript to view this article.</div>'
+                } 
+              />
+            </div>
+          </section>
         )}
 
         {/* ------------------------------------------------------------- */}
