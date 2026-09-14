@@ -17,8 +17,9 @@ export default function GatedContent({ id, placeholder }) {
   useEffect(() => {
     // We only fetch on the client side.
     let isMounted = true;
-
-    fetch(`/api/content`, {
+    const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+    
+    fetch(`${API_BASE}/api/content`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
