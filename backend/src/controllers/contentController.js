@@ -35,6 +35,20 @@ export const getContent = (req, res) => {
         </article>
       `;
       break;
+    case 'tree-knowledge':
+      html = `
+        <article class="real-article-content">
+          <h3 class="text-xl font-bold text-emerald-400 mb-2">The Hidden Network of Trees</h3>
+          <p class="text-slate-300 leading-relaxed mb-3">
+            Beneath the forest floor lies a complex network of mycorrhizal fungi, often referred to as the "Wood Wide Web." 
+            This symbiotic network connects the roots of trees, allowing them to communicate, share nutrients, and even send distress signals to one another when threatened by pests or drought.
+          </p>
+          <p class="text-slate-300 leading-relaxed">
+            Because this paragraph is rendered via client-side fetch, AI crawlers scraping the static HTML have no idea that we are discussing the fascinating biology of forest ecosystems here!
+          </p>
+        </article>
+      `;
+      break;
     default:
       html = `
         <div class="real-generic-content">
